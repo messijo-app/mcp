@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "dependencies": {
+    "attesto": "1.9.0",
+    "attesto_phoenix": "2.8.0",
+    "jose": "1.11.12",
+    "plug": "1.20.3"
+  },
+  "issuer": "https://auth.messijo.com",
+  "resources": {
+    "mcp": "https://mcp.messijo.com/mcp",
+    "worker_backend": "https://api.messijo.com/oauth/worker-delegation"
+  },
+  "signing": {
+    "algorithm": "RS256",
+    "private_key_serialization": "PKCS8 PEM PRIVATE KEY",
+    "public_key_serialization": "RFC 7517 RSA JWK",
+    "kid": "RFC 7638 SHA-256 JWK thumbprint",
+    "compact_jws": true,
+    "access_token_header_typ": "at+jwt"
+  },
+  "lifetimes_seconds": {
+    "authorization_transaction": 600,
+    "authorization_code": 60,
+    "mcp_access": 300,
+    "worker_backend": 60,
+    "refresh_absolute": 1209600,
+    "continuation": 120
+  },
+  "mcp_access_token": {
+    "audience": "https://mcp.messijo.com/mcp",
+    "token_use": "mcp_access",
+    "required_claims": [
+      "iss",
+      "aud",
+      "sub",
+      "exp",
+      "iat",
+      "jti",
+      "scope",
+      "typ",
+      "principal_kind",
+      "token_use",
+      "client_id",
+      "original_client_id",
+      "grant_id",
+      "organization_ids"
+    ]
+  },
+  "worker_backend_token": {
+    "audience": "https://api.messijo.com/oauth/worker-delegation",
+    "token_use": "worker_backend",
+    "required_claims": [
+      "iss",
+      "aud",
+      "sub",
+      "exp",
+      "iat",
+      "jti",
+      "scope",
+      "typ",
+      "principal_kind",
+      "token_use",
+      "client_id",
+      "original_client_id",
+      "grant_id",
+      "organization_ids",
+      "actor_client_id"
+    ],
+    "maximum_expiry": "min(iat + 60, subject_token.exp)"
+  },
+  "worker_authentication": {
+    "client_id": "messijo-mcp-worker",
+    "method": "client_secret_basic",
+    "active_secret_env": "MCP_WORKER_CLIENT_SECRET",
+    "retiring_secret_env": "MCP_WORKER_CLIENT_SECRET_RETIRING",
+    "retiring_secret_valid_until_env": "MCP_WORKER_CLIENT_SECRET_RETIRING_VALID_UNTIL",
+    "retiring_secret_valid_until_format": "unix_seconds",
+    "rotation_overlap_seconds": 900,
+    "accepted_during_overlap": ["active", "retiring"],
+    "accepted_after_overlap": ["active"]
+  },
+  "introspection": {
+    "caller": "messijo-mcp-worker",
+    "extension_namespace": "https://messijo.com/oauth/grant-context/v1",
+    "extension_fields": [
+      "grant_id",
+      "organization_ids",
+      "original_client_id",
+      "user_id"
+    ],
+    "inactive_shape": {"active": false}
+  },
+  "refresh_family": {
+    "issuance": "public client only when offline_access is granted",
+    "rotate_every_use": true,
+    "rotation_grace_seconds": 0,
+    "reuse_response": "revoke_family",
+    "stored_form": "SHA-256 hash of opaque token"
+  },
+  "exchange": {
+    "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+    "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
+    "issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
+    "attesto_phoenix_builtin_enabled": false,
+    "implementation": "Messijo-owned adapter over Attesto.Token and AttestoPhoenix.ClientAuthentication"
+  },
+  "failure_behavior": {
+    "unknown_or_inactive_introspection": "inactive_shape_without_extensions",
+    "wrong_worker_authentication": "invalid_client",
+    "invalid_subject_token": "invalid_grant",
+    "scope_broadening": "invalid_scope",
+    "wrong_resource_or_recipient": "invalid_target",
+    "unknown_token_use": "reject",
+    "missing_or_malformed_signing_key": "issuance_disabled"
+  }
+}

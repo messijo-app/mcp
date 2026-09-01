@@ -1,0 +1,642 @@
+{
+  "api_revision": "sha256:4dca13e61ead99cff6ab6f069a4a9d6c7a6ea38b689e9ce8a96bc2f1c0ade8d1",
+  "fixture_sha256": "ed4ca73176ccf84e22c0a8c664b60145b9a867c87fbb283eaeddd00801796f27",
+  "payload": {
+    "consumer": "mcp-worker",
+    "contract_version": 1,
+    "deferred_rest_semantics": {
+      "automatic_retry_guarantee_added": false,
+      "cursor_semantics_added": false,
+      "idempotency_persistence_added": false,
+      "mcp_confirmation_added": false,
+      "rule": "Allowed operations inherit existing REST behavior; do not automatically retry an unsafe mutation unless that route documents safe retry behavior."
+    },
+    "errors": {
+      "invalid_client": {
+        "status": 401,
+        "www_authenticate": "Basic realm=oauth-worker"
+      },
+      "invalid_grant": {
+        "status": 400
+      },
+      "invalid_scope": {
+        "status": 400
+      },
+      "invalid_target": {
+        "status": 400
+      },
+      "quota_exceeded": {
+        "status": 402
+      },
+      "superadmin_rest_route": {
+        "status": 404
+      },
+      "unselected_or_unclassified_rest_route": {
+        "status": 404
+      }
+    },
+    "introspection": {
+      "active_extension": "https://messijo.com/oauth/grant-context/v1",
+      "authentication": "worker_client_secret_basic",
+      "endpoint": "https://auth.messijo.com/oauth/introspect",
+      "extension_fields": [
+        "grant_id",
+        "organization_ids",
+        "original_client_id",
+        "resource",
+        "effective_scopes",
+        "user_id"
+      ],
+      "inactive_body": {
+        "active": false
+      }
+    },
+    "jwks": {
+      "active_and_unexpired_retiring_keys_published": true,
+      "content_type": "application/jwk-set+json",
+      "forbidden_private_members": [
+        "d",
+        "p",
+        "q",
+        "dp",
+        "dq",
+        "qi",
+        "oth"
+      ],
+      "required_public_members": [
+        "kty",
+        "kid",
+        "alg",
+        "use"
+      ],
+      "signing_algorithm": "RS256"
+    },
+    "mcp_access_token": {
+      "aud": "https://mcp.messijo.com/mcp",
+      "lifetime_seconds": 300,
+      "required_claims": [
+        "iss",
+        "aud",
+        "sub",
+        "iat",
+        "exp",
+        "jti",
+        "scope",
+        "client_id",
+        "original_client_id",
+        "grant_id",
+        "organization_ids",
+        "token_use"
+      ],
+      "token_use": "mcp_access",
+      "verifier_rules": [
+        "Require RS256 and a currently published kid.",
+        "Require exact issuer, resource audience, and token_use.",
+        "Treat organization_ids as identifiers only; read names live through selected REST routes."
+      ]
+    },
+    "metadata": {
+      "authorization_endpoint": "https://auth.messijo.com/oauth/authorize",
+      "authorization_response_iss_parameter_supported": true,
+      "code_challenge_methods_supported": [
+        "S256"
+      ],
+      "grant_types_supported": [
+        "authorization_code",
+        "refresh_token",
+        "urn:ietf:params:oauth:grant-type:token-exchange"
+      ],
+      "introspection_endpoint": "https://auth.messijo.com/oauth/introspect",
+      "introspection_endpoint_auth_methods_supported": [
+        "client_secret_basic"
+      ],
+      "issuer": "https://auth.messijo.com",
+      "jwks_uri": "https://auth.messijo.com/.well-known/jwks.json",
+      "response_modes_supported": [
+        "query"
+      ],
+      "response_types_supported": [
+        "code"
+      ],
+      "revocation_endpoint": "https://auth.messijo.com/oauth/revoke",
+      "revocation_endpoint_auth_methods_supported": [
+        "none"
+      ],
+      "token_endpoint": "https://auth.messijo.com/oauth/token",
+      "token_endpoint_auth_methods_supported": [
+        "none",
+        "client_secret_basic"
+      ]
+    },
+    "rest_contract_version": "0.3.0",
+    "revocation": {
+      "active_grant_rechecked_for_introspection_exchange_and_every_rest_call": true,
+      "endpoint": "https://auth.messijo.com/oauth/revoke",
+      "unknown_token_is_success": true
+    },
+    "route_policy": [
+      {
+        "action": "index",
+        "controller": "MessijoWeb.Admin.OrgController",
+        "decision": "denied",
+        "minimum_scope": null,
+        "rationale": "The /admin surface exercises platform superadmin authority, which OAuth delegation never exposes."
+      },
+      {
+        "action": "update_billing_tier",
+        "controller": "MessijoWeb.Admin.OrgController",
+        "decision": "denied",
+        "minimum_scope": null,
+        "rationale": "The /admin surface exercises platform superadmin authority, which OAuth delegation never exposes."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.ApiKeyController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "API-key management remains limited by selected organization, live membership, and admin scope."
+      },
+      {
+        "action": "delete",
+        "controller": "MessijoWeb.ApiKeyController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "API-key management remains limited by selected organization, live membership, and admin scope."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.ApiKeyController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "API-key management remains limited by selected organization, live membership, and admin scope."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.ApiKeyController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "API-key management remains limited by selected organization, live membership, and admin scope."
+      },
+      {
+        "action": "get_payment_method",
+        "controller": "MessijoWeb.BillingController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Billing actions retain the existing organization-admin and provider-specific safeguards."
+      },
+      {
+        "action": "start_checkout",
+        "controller": "MessijoWeb.BillingController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Billing actions retain the existing organization-admin and provider-specific safeguards."
+      },
+      {
+        "action": "start_portal_session",
+        "controller": "MessijoWeb.BillingController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Billing actions retain the existing organization-admin and provider-specific safeguards."
+      },
+      {
+        "action": "all_lenses",
+        "controller": "MessijoWeb.KeywordController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Keyword actions reuse existing organization permissions, quotas, validation, and response contracts."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.KeywordController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Keyword actions reuse existing organization permissions, quotas, validation, and response contracts."
+      },
+      {
+        "action": "delete",
+        "controller": "MessijoWeb.KeywordController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Keyword actions reuse existing organization permissions, quotas, validation, and response contracts."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.KeywordController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Keyword actions reuse existing organization permissions, quotas, validation, and response contracts."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.KeywordController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Keyword actions reuse existing organization permissions, quotas, validation, and response contracts."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.KeywordController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Keyword actions reuse existing organization permissions, quotas, validation, and response contracts."
+      },
+      {
+        "action": "export_data",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "index_full_events",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "mark_all_keyword_events_as_read",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "totals",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "denied",
+        "minimum_scope": null,
+        "rationale": "This ordinary-API action requires the existing superadmin permission and cannot be delegated."
+      },
+      {
+        "action": "update_status",
+        "controller": "MessijoWeb.KeywordEventController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Non-superadmin event actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "delete",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "start",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "status",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "stop",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.KeywordLensController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens actions reuse existing organization permissions, quota enforcement, and job behavior."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.KeywordLensNotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens-notification changes retain selected-organization and write-role checks."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "mark_all_keyword_lens_results_as_read",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "pending",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "totals",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.KeywordLensResultController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Lens-result actions reuse existing organization and controller authorization."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.KeywordNotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Keyword-notification changes retain selected-organization and write-role checks."
+      },
+      {
+        "action": "connect_discord",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "connect_slack",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "delete",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "resend_verification",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "validate_webhook",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "verify",
+        "controller": "MessijoWeb.NotificationController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Notification and external-connection actions retain existing validation and organization checks."
+      },
+      {
+        "action": "cancel_gifted_subscription",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "delete",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "quotas",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "update_experimental_features",
+        "controller": "MessijoWeb.OrgController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Organization actions retain grant selection, live membership, controller permissions, and business rules."
+      },
+      {
+        "action": "accept_invite",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "create",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "delete",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "delete_self",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "index",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "show",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "update",
+        "controller": "MessijoWeb.OrgUserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "Membership and invitation actions retain current organization-role and controller safeguards."
+      },
+      {
+        "action": "dashboard",
+        "controller": "MessijoWeb.StatsController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "Organization statistics remain bounded by selected organization and read scope."
+      },
+      {
+        "action": "current",
+        "controller": "MessijoWeb.UserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:read",
+        "rationale": "The Worker acts as the grant user; account actions remain bounded by OAuth scope."
+      },
+      {
+        "action": "delete_current",
+        "controller": "MessijoWeb.UserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:admin",
+        "rationale": "The Worker acts as the grant user; account actions remain bounded by OAuth scope."
+      },
+      {
+        "action": "update_current",
+        "controller": "MessijoWeb.UserController",
+        "decision": "allowed",
+        "minimum_scope": "messijo:write",
+        "rationale": "The Worker acts as the grant user; account actions remain bounded by OAuth scope."
+      }
+    ],
+    "selected_organizations": {
+      "list": "GET /api/orgs returns only active-grant-selected organizations",
+      "names": "Read live REST data; never copy names from token claims.",
+      "show": "GET /api/orgs/{id} hides unselected or inaccessible organizations with 404"
+    },
+    "worker": {
+      "authentication_method": "client_secret_basic",
+      "backend_audience": "https://api.messijo.com/oauth/worker-delegation",
+      "backend_lifetime_seconds": 60,
+      "backend_token_use": "worker_backend",
+      "client_id": "messijo-mcp-worker",
+      "exchange": {
+        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+        "issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
+        "lifetime_behavior": "never exceeds either backend lifetime or subject-token remaining lifetime",
+        "scope_behavior": "omitted keeps granted online scopes; supplied scope may only narrow",
+        "subject_token_type": "urn:ietf:params:oauth:token-type:access_token"
+      }
+    }
+  }
+}
