@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "mcp-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [{ "pattern": "mcp.messijo.com", "custom_domain": true }],
+  "vars": {
+    "AUTH_BASE_URL": "https://auth.messijo.com",
+    "REST_API_BASE_URL": "https://api.messijo.com",
+    "MCP_RESOURCE_URL": "https://mcp.messijo.com/mcp",
+    "MCP_PUBLIC_BASE_URL": "https://mcp.messijo.com",
+    "INTROSPECTION_CACHE_TTL_SECONDS": "10",
+    "JWKS_CACHE_TTL_SECONDS": "300"
+  }
+}

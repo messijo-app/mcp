@@ -1,0 +1,126 @@
+{
+  "api_revision": "sha256:4dca13e61ead99cff6ab6f069a4a9d6c7a6ea38b689e9ce8a96bc2f1c0ade8d1",
+  "fixture_sha256": "c06ce050a0e1ab0bf6b19ed56579b31f73a78f3f7576f1d3a10a63217e879ff3",
+  "payload": {
+    "authentication": {
+      "api_key_accepted": false,
+      "conflicting_credentials": {
+        "error": "invalid_token",
+        "status": 401
+      },
+      "credential": "dashboard_access_bearer",
+      "dashboard_refresh_token_accepted": false
+    },
+    "browser_continuation": {
+      "concurrent_tabs": "Keep each transaction URL isolated per tab; never use one global pending transaction.",
+      "resume_state": "Store only the opaque transaction-specific dashboard URL.",
+      "terminal_behavior": "Navigate to continuation_url once; a second use is terminal 410."
+    },
+    "consumer": "dashboard",
+    "contract_version": 1,
+    "endpoints": {
+      "consent": "/oauth/consent/transactions/{transaction_id}",
+      "continuation": "https://auth.messijo.com/oauth/continue?token={continuation_token}",
+      "decision": "/oauth/consent/transactions/{transaction_id}/decision"
+    },
+    "examples": {
+      "approval": {
+        "authorization_code_exposed_to_dashboard": false,
+        "body": {
+          "continuation_url": "https://auth.messijo.com/oauth/continue?token=REDACTED"
+        },
+        "request": {
+          "anti_replay_token": "REDACTED",
+          "decision": "approve",
+          "organization_ids": [
+            "org_01fixture"
+          ]
+        },
+        "status": 200
+      },
+      "consent_view": {
+        "body": {
+          "anti_replay_token": "REDACTED",
+          "client": {
+            "client_id": "https://client.example/oauth.json",
+            "client_name": "Example MCP Client",
+            "client_uri": "https://client.example"
+          },
+          "grantable_scopes": [
+            "messijo:read"
+          ],
+          "organizations": [
+            {
+              "id": "org_01fixture",
+              "name": "Example Organization",
+              "role": "admin"
+            }
+          ],
+          "requested_scopes": [
+            "messijo:read"
+          ],
+          "state": "pending",
+          "transaction_id": "oauth_transaction_01fixture"
+        },
+        "omitted_security_bindings": [
+          "redirect_uri",
+          "oauth_state",
+          "pkce_challenge"
+        ],
+        "status": 200
+      },
+      "continuation_replay_or_expiry": {
+        "body": {
+          "error": "invalid_continuation"
+        },
+        "status": 410
+      },
+      "cors": {
+        "allowed_headers": [
+          "authorization",
+          "content-type"
+        ],
+        "allowed_methods": [
+          "GET",
+          "POST",
+          "OPTIONS"
+        ],
+        "allowed_origin": "https://app.messijo.com",
+        "disallowed_origin_status": 403,
+        "preflight_status": 204
+      },
+      "decision_replay": {
+        "body": {
+          "error": "transaction_already_completed"
+        },
+        "status": 409
+      },
+      "denial": {
+        "continuation_callback": {
+          "error": "access_denied",
+          "iss": "https://auth.messijo.com",
+          "state": "frozen-client-state"
+        },
+        "request": {
+          "anti_replay_token": "REDACTED",
+          "decision": "deny"
+        },
+        "status": 200
+      },
+      "expired_transaction": {
+        "body": {
+          "error": "transaction_expired"
+        },
+        "status": 410
+      },
+      "reauthentication": {
+        "body": {
+          "error": "reauthentication_required",
+          "resumable": true
+        },
+        "maximum_authentication_age_seconds": 900,
+        "status": 401
+      }
+    }
+  }
+}
