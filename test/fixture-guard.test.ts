@@ -44,6 +44,9 @@ describe("vendored fixture guard", () => {
     expect(payload.worker.exchange.grant_type).toBe(
       "urn:ietf:params:oauth:grant-type:token-exchange",
     );
+    expect(payload.worker.backend_audience).toBe(
+      "https://api.messijo.com/oauth/worker-delegation",
+    );
     expect(payload.route_policy.length).toBeGreaterThan(50);
     expect(payload.rest_contract_version).toBe("0.3.0");
   });

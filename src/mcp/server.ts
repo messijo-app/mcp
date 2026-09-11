@@ -185,14 +185,28 @@ export function buildMcpServer(
                 ? "Worker client credentials were rejected by the authorization server. Try again later."
                 : error instanceof ExchangeError && error.failure === "invalid_grant"
                   ? "The authorization grant is no longer valid (revoked or expired). Re-authorize and try again."
-                  : error instanceof RestTransportError
-                    ? "REST API transport failure."
-                    : "Internal worker error.";
+                  : error instanceof ExchangeError &&
+                      (error.failure === "invalid_target" ||
+                        error.failure === "invalid_scope" ||
+                        error.failure === "invalid_request" ||
+                        error.failure === "unsupported_grant_type" ||
+                        error.failure === "invalid_400_response")
+                    ? "Worker misconfiguration: the token endpoint rejected the exchange. Contact the operator — retrying will not help."
+                    : error instanceof RestTransportError
+                      ? "REST API transport failure."
+                      : "Internal worker error.";
           const status =
             error instanceof ExchangeError &&
             (error.failure === "invalid_grant" || error.failure === "unauthorized")
               ? 401
-              : 503;
+              : error instanceof ExchangeError &&
+                  (error.failure === "invalid_target" ||
+                    error.failure === "invalid_scope" ||
+                    error.failure === "invalid_request" ||
+                    error.failure === "unsupported_grant_type" ||
+                    error.failure === "invalid_400_response")
+                ? 500
+                : 503;
           return toolError(status, { error: message, failure });
         }
       },

@@ -120,12 +120,36 @@ To call REST, exchange the verified `T_mcp` for `T_backend`:
 - `subject_token`: the `T_mcp` value; `subject_token_type`:
   `urn:ietf:params:oauth:token-type:access_token`;
   `issued_token_type`: `urn:ietf:params:oauth:token-type:access_token`
+- `resource` (required): the RFC 8693 target-audience indicator the API's
+  exchange validation enforces. Derived from the REST API base URL as
+  `<REST_API_BASE_URL>/oauth/worker-delegation` (e.g.
+  `https://api.messijo.com/oauth/worker-delegation` in production, matching
+  the API's `OAUTH_WORKER_BACKEND_RESOURCE` default). Omitting or mistyping it
+  yields `400 invalid_target`.
 - Optional `scope` may only narrow the granted scopes; omit it to keep them.
 - Result: `worker_backend` token, audience
   `https://api.messijo.com/oauth/worker-delegation`, lifetime 60 seconds,
   never exceeding the subject token's remaining lifetime.
 
 Send it as a Bearer token to `https://api.messijo.com` REST routes.
+
+### Token-endpoint 400 classification
+
+The token endpoint distinguishes 400 error codes; the Worker surfaces them
+truthfully instead of collapsing every 400 into a dead grant:
+
+| 400 `error`           | Surfaced failure        | Tool-call status | Meaning                                        |
+| --------------------- | ----------------------- | ---------------- | ---------------------------------------------- |
+| `invalid_grant`       | `exchange_invalid_grant`| 401              | Grant revoked/expired — user must re-authorize |
+| `invalid_target`      | `exchange_invalid_target` | 500            | Worker misconfiguration (`resource` wrong/absent) |
+| `invalid_scope`       | `exchange_invalid_scope`| 500              | Worker misconfiguration (scope narrowing rejected) |
+| `invalid_request`     | `exchange_invalid_request` | 500           | Worker misconfiguration (malformed exchange)   |
+| `unsupported_grant_type` | `exchange_unsupported_grant_type` | 500   | Worker misconfiguration (grant not enabled)    |
+| anything else / unparseable | `exchange_invalid_400_response` | 500     | Unknown rejection — investigate server-side    |
+
+Only `invalid_grant` is user-recoverable (401, re-authorize). The other
+classifications are operator-facing: retrying will not help, so they map to
+500 with an explicit misconfiguration message and no retry is attempted.
 
 ### Caching T_backend: trade-offs
 

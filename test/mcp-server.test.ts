@@ -288,3 +288,38 @@ describe("faithful backend error surfacing", () => {
     expect(result?.body).toEqual({ error: "insufficient_scope" });
   });
 });
+
+describe("exchange failure surfacing", () => {
+  it("maps a 400 invalid_target exchange rejection to 500 with the operator message", async () => {
+    doubles().exchange = () => ({
+      status: 400,
+      body: { error: "invalid_target", error_description: "resource mismatch" },
+    });
+    const token = await signMcpToken();
+    const response = await postMcp(app, token, toolCallRequest("me", { action: "me" }));
+    const result = toolResult(await rpcBody(response));
+    expect(result?.isError).toBe(true);
+    expect(result?.status).toBe(500);
+    expect(result?.body).toMatchObject({ failure: "exchange_invalid_target" });
+    expect(JSON.stringify(result)).toMatch(/misconfiguration/i);
+    // No retry storm: a single exchange attempt, no REST calls.
+    expect(doubles().counts.exchange).toBe(1);
+    expect(doubles().counts.rest).toBe(0);
+  });
+
+  it("keeps mapping a 400 invalid_grant exchange rejection to 401", async () => {
+    doubles().exchange = () => ({
+      status: 400,
+      body: { error: "invalid_grant", error_description: "subject token revoked" },
+    });
+    const token = await signMcpToken();
+    const response = await postMcp(app, token, toolCallRequest("me", { action: "me" }));
+    const result = toolResult(await rpcBody(response));
+    expect(result?.isError).toBe(true);
+    expect(result?.status).toBe(401);
+    expect(result?.body).toMatchObject({ failure: "exchange_invalid_grant" });
+    expect(JSON.stringify(result)).toMatch(/revoke|re-authorize/i);
+    expect(doubles().counts.exchange).toBe(1);
+    expect(doubles().counts.rest).toBe(0);
+  });
+});
