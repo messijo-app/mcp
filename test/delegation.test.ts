@@ -7,6 +7,7 @@ import {
   ACTIVE_SECRET,
   CLIENT_ID,
   RETIRING_SECRET,
+  REST_BASE,
   rpcBody,
   signMcpToken,
   TEST_ENV,
@@ -15,7 +16,7 @@ import {
   toolResult,
 } from "./helpers";
 import { app } from "./app";
-import { BACKEND_TOKEN, doubles, installDoubles, resetDoubles } from "./doubles";
+import { BACKEND_TOKEN, doubles, installDoubles, resetDoubles, type DoublesState } from "./doubles";
 import { resetIntrospectionCache } from "../src/auth/introspection";
 import { resetJwksCache } from "../src/auth/jwks";
 
@@ -57,6 +58,7 @@ describe("token exchange (RFC 8693)", () => {
     expect(body.get("grant_type")).toBe("urn:ietf:params:oauth:grant-type:token-exchange");
     expect(body.get("subject_token_type")).toBe("urn:ietf:params:oauth:token-type:access_token");
     expect(body.get("issued_token_type")).toBe("urn:ietf:params:oauth:token-type:access_token");
+    expect(body.get("resource")).toBe(`${REST_BASE}/oauth/worker-delegation`);
     // Exchange narrowing is not requested: granted scopes are kept.
     expect(body.has("scope")).toBe(false);
     expect(body.get("subject_token")).toBe(token);
@@ -88,7 +90,7 @@ describe("token exchange (RFC 8693)", () => {
     expect(doubles().counts.exchange).toBe(2);
   });
 
-  it("maps a 400 token-endpoint rejection to invalid_grant (revoked grant), not internal error", async () => {
+  it("maps a 400 invalid_grant rejection to a 401 re-authorize error, with no retry", async () => {
     doubles().exchange = () => ({
       status: 400,
       body: { error: "invalid_grant", error_description: "subject token revoked" },
@@ -103,6 +105,42 @@ describe("token exchange (RFC 8693)", () => {
     // No retry storm: exactly one exchange attempt, no REST calls.
     expect(doubles().counts.exchange).toBe(1);
     expect(doubles().counts.rest).toBe(0);
+  });
+
+  it("maps a 400 invalid_target rejection to exchange_invalid_target, with no retry", async () => {
+    doubles().exchange = () => ({
+      status: 400,
+      body: { error: "invalid_target", error_description: "resource mismatch" },
+    });
+    const token = await signMcpToken();
+    const response = await postMcp(app, token, toolCallRequest("me", { action: "me" }));
+    const result = toolResult(await rpcBody(response));
+    expect(result?.isError).toBe(true);
+    expect(result?.body).toMatchObject({ failure: "exchange_invalid_target" });
+    expect(doubles().counts.exchange).toBe(1);
+    expect(doubles().counts.rest).toBe(0);
+  });
+
+  it("maps a 400 with an unknown error code to the generic invalid_400_response fallback", async () => {
+    doubles().exchange = () => ({
+      status: 400,
+      body: { error: "something_unexpected" },
+    });
+    const { ctx } = await makeDelegationContext();
+    await expect(ctx.getBackendToken()).rejects.toMatchObject({
+      failure: "invalid_400_response",
+    });
+    expect(doubles().counts.exchange).toBe(1);
+  });
+
+  it("falls back to invalid_400_response when the 400 body has no usable error field", async () => {
+    doubles().exchange = () =>
+      ({ status: 400, body: { error: 123 } }) as ReturnType<DoublesState["exchange"]>;
+    const { ctx } = await makeDelegationContext();
+    await expect(ctx.getBackendToken()).rejects.toMatchObject({
+      failure: "invalid_400_response",
+    });
+    expect(doubles().counts.exchange).toBe(1);
   });
 });
 

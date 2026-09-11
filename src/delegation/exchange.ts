@@ -12,7 +12,25 @@ export type ExchangeFailure =
   | "server_error"
   | "network"
   | "invalid_grant"
+  | "invalid_target"
+  | "invalid_scope"
+  | "invalid_request"
+  | "unsupported_grant_type"
+  | "invalid_400_response"
   | "invalid_response";
+
+/**
+ * 400 error codes from the token endpoint that map directly onto an
+ * `ExchangeFailure`. Anything else (or an unparseable body) falls back to
+ * `invalid_400_response`.
+ */
+const KNOWN_400_ERRORS: ReadonlySet<string> = new Set([
+  "invalid_grant",
+  "invalid_target",
+  "invalid_scope",
+  "invalid_request",
+  "unsupported_grant_type",
+]);
 
 export class ExchangeError extends Error {
   constructor(
@@ -34,6 +52,9 @@ export class DelegationContext {
 
   readonly restBaseUrl: string;
 
+  /** RFC 8693 `resource` value required by the API's exchange validation. */
+  readonly workerBackendResource: string;
+
   constructor(
     private readonly config: Config,
     readonly claims: McpTokenClaims,
@@ -41,6 +62,7 @@ export class DelegationContext {
     private readonly mcpToken: string,
   ) {
     this.restBaseUrl = config.restApiBaseUrl;
+    this.workerBackendResource = `${config.restApiBaseUrl}/oauth/worker-delegation`;
   }
 
   /**
@@ -74,6 +96,7 @@ export class DelegationContext {
           subject_token: this.mcpToken,
           subject_token_type: ACCESS_TOKEN_TYPE,
           issued_token_type: ACCESS_TOKEN_TYPE,
+          resource: this.workerBackendResource,
         },
       });
     } catch (error) {
@@ -85,14 +108,24 @@ export class DelegationContext {
     }
 
   if (response.status !== 200) {
-    // A 400 from the token endpoint (e.g. invalid_grant: the subject token
-    // was revoked or expired mid-request) means the grant is no longer
-    // usable — an auth failure, not an internal error.
+    // A 400 from the token endpoint is classified by the body's `error`
+    // field: `invalid_grant` means the grant is no longer usable (an auth
+    // failure), while the other codes indicate worker/API misconfiguration
+    // and must not be masked as a dead grant.
     if (response.status === 400) {
-      await response.body?.cancel();
+      let errorCode: string | null = null;
+      try {
+        const body = (await response.json()) as { error?: unknown };
+        if (typeof body.error === "string") errorCode = body.error;
+      } catch {
+        // Non-JSON body → generic fallback below.
+      }
+      const failure = errorCode !== null && KNOWN_400_ERRORS.has(errorCode)
+        ? (errorCode as ExchangeFailure)
+        : "invalid_400_response";
       throw new ExchangeError(
-        "invalid_grant",
-        "Token exchange rejected the subject token (grant revoked or expired)",
+        failure,
+        `Token exchange rejected with 400 (${failure})`,
       );
     }
     throw new ExchangeError(
