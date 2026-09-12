@@ -37,7 +37,7 @@ describe("structured logging discipline", () => {
     // user/grant ids come from the introspected grant context (the doubles).
     expect(toolCall!.userId).toBe("user-1");
     expect(toolCall!.grantId).toBe("grant-1");
-    expect(toolCall!.route).toBe("GET /api/me");
+    expect(toolCall!.route).toBe("GET /api/users/current");
     expect(toolCall!.outcome).toBe("ok");
   });
 

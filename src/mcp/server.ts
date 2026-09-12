@@ -10,18 +10,36 @@ import { findRoute, requiresOrganizationId, routesForTool, ROUTE_TABLE, type Rou
 interface ToolInput {
   action?: string;
   organization_id?: string;
+  keyword_id?: string;
+  lens_id?: string;
   id?: string;
   params?: Record<string, unknown>;
 }
 
+const PATH_PARAM_DESCRIPTIONS: Record<string, string> = {
+  organization_id: "Organization id from the organizations tool's list action.",
+  keyword_id: "Keyword id from the keywords tool's list action.",
+  lens_id: "Lens id from the lenses tool's list action.",
+  id: "Resource id.",
+};
+
+const TOOL_HEADERS: Record<string, string> = {
+  me: "Account information for the grant user.",
+  organizations:
+    "Organizations selected by the active grant. Start with action `list` to resolve live organization names and organization_id values.",
+  keyword_events:
+    "Keyword events for one keyword. Pass `organization_id` (from the organizations tool's list action), `keyword_id` (from the keywords tool's list action), and an `action`.",
+  lenses:
+    "Lenses for one keyword. Pass `organization_id` (from the organizations tool's list action), `keyword_id` (from the keywords tool's list action), and an `action`. The list action's returned ids are the `lens_id` for the lens_results tool.",
+  lens_results:
+    "Lens results for one lens. Pass `organization_id` (from the organizations tool's list action), `keyword_id` (from the keywords tool's list action), `lens_id` (from the lenses tool's list action), and an `action`.",
+};
+
 function toolDescription(tool: string, entries: RouteEntry[]): string {
   const header =
-    tool === "me"
-      ? "Account information for the grant user."
-      : tool === "organizations"
-        ? "Organizations selected by the active grant. Start with action `list` to resolve live organization names and organization_id values."
-        : `Composable tool for the ${tool.replace(/_/g, " ")} area. Pass ` +
-          "`organization_id` (from the organizations tool's list action) and an `action`.";
+    TOOL_HEADERS[tool] ??
+    `Composable tool for the ${tool.replace(/_/g, " ")} area. Pass ` +
+      "`organization_id` (from the organizations tool's list action) and an `action`.";
   const actions = entries.map((entry) => `- ${entry.action}: ${entry.description}`).join("\n");
   return `${header}\nActions:\n${actions}`;
 }
@@ -31,16 +49,15 @@ function inputShape(entries: RouteEntry[]): z.ZodRawShape {
   const shape: z.ZodRawShape = {
     action: z.enum(actions).describe("REST operation to perform."),
   };
-  if (entries.some((entry) => entry.pathParams.includes("organization_id"))) {
-    // Optional at the schema level: `organizations.list` and `me` do not need
-    // it; per-action validation happens in the handler before any REST call.
-    shape.organization_id = z
+  const pathParams = [...new Set(entries.flatMap((entry) => entry.pathParams))];
+  for (const param of pathParams) {
+    // Optional at the schema level: not every action of a tool needs every
+    // path parameter; per-action validation happens in the handler before any
+    // REST call.
+    shape[param] = z
       .string()
       .optional()
-      .describe("Organization id from the organizations tool's list action.");
-  }
-  if (entries.some((entry) => entry.pathParams.includes("id"))) {
-    shape.id = z.string().optional().describe("Resource id.");
+      .describe(PATH_PARAM_DESCRIPTIONS[param] ?? `Path parameter ${param}.`);
   }
   shape.params = z
       .record(z.unknown())
@@ -51,11 +68,15 @@ function inputShape(entries: RouteEntry[]): z.ZodRawShape {
   return shape;
 }
 
+function readPathParam(input: ToolInput, param: string): string | undefined {
+  const value = (input as Record<string, unknown>)[param];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 function buildPath(entry: RouteEntry, input: ToolInput): string {
   let path = entry.pathTemplate;
   for (const param of entry.pathParams) {
-    const value = param === "organization_id" ? input.organization_id : input.id;
-    path = path.replaceAll(`{${param}}`, encodeURIComponent(value ?? ""));
+    path = path.replaceAll(`{${param}}`, encodeURIComponent(readPathParam(input, param) ?? ""));
   }
   return path;
 }
@@ -102,8 +123,7 @@ export function buildMcpServer(
         }
 
         for (const param of entry.pathParams) {
-          const value = param === "organization_id" ? input.organization_id : input.id;
-          if (!value) {
+          if (readPathParam(input, param) === undefined) {
             return toolError(400, { error: `Missing required parameter: ${param}` });
           }
         }

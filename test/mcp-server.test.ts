@@ -93,10 +93,10 @@ describe("stateless MCP endpoint at /mcp", () => {
 });
 
 describe("tool calls", () => {
-  it("me delegates to GET /api/me and returns the API payload", async () => {
+  it("me delegates to GET /api/users/current and returns the API payload", async () => {
     doubles().rest = (request) => {
       expect(request.method).toBe("GET");
-      expect(request.path).toBe("/api/me");
+      expect(request.path).toBe("/api/users/current");
       return { status: 200, body: { id: "user-1", email: "user@example.com" } };
     };
     const token = await signMcpToken();
@@ -144,6 +144,52 @@ describe("tool calls", () => {
     expect(result?.isError).toBe(true);
     expect(result?.status).toBe(400);
     expect(doubles().counts.rest).toBe(0);
+  });
+
+  const missingNestedIdCases: { tool: string; args: Record<string, unknown>; missing: string }[] = [
+    { tool: "keyword_events", args: { action: "list", organization_id: "org-1" }, missing: "keyword_id" },
+    { tool: "lenses", args: { action: "list", organization_id: "org-1" }, missing: "keyword_id" },
+    { tool: "lens_results", args: { action: "list", organization_id: "org-1" }, missing: "keyword_id" },
+    {
+      tool: "lens_results",
+      args: { action: "list", organization_id: "org-1", keyword_id: "kw-1" },
+      missing: "lens_id",
+    },
+  ];
+
+  for (const { tool, args, missing } of missingNestedIdCases) {
+    it(`rejects ${tool} without ${missing} before any exchange or REST call`, async () => {
+      const token = await signMcpToken();
+      const response = await postMcp(app, token, toolCallRequest(tool, args));
+      const result = toolResult(await rpcBody(response));
+      expect(result?.isError).toBe(true);
+      expect(result?.status).toBe(400);
+      expect(JSON.stringify(result?.body)).toContain(missing);
+      expect(doubles().counts.exchange).toBe(0);
+      expect(doubles().counts.rest).toBe(0);
+    });
+  }
+
+  it("URL-encodes path identifiers containing reserved characters", async () => {
+    doubles().rest = (request) => {
+      expect(request.path).toBe(
+        "/api/orgs/org-1/keywords/kw-1/lenses/lens%2Fwith%20spaces%3F/results",
+      );
+      return { status: 200, body: { lens_results: [] } };
+    };
+    const token = await signMcpToken();
+    const response = await postMcp(
+      app,
+      token,
+      toolCallRequest("lens_results", {
+        action: "list",
+        organization_id: "org-1",
+        keyword_id: "kw-1",
+        lens_id: "lens/with spaces?",
+      }),
+    );
+    const result = toolResult(await rpcBody(response));
+    expect(result?.status).toBe(200);
   });
 
   it("rejects non-scalar params at the tool level without REST calls", async () => {
