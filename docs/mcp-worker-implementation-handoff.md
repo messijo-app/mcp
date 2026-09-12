@@ -206,11 +206,11 @@ Start with the read-heavy monitoring surface plus essential mutations. All are
 | Tool area | REST routes | Min scope |
 | --- | --- | --- |
 | Organizations | `GET /api/orgs`, `GET /api/orgs/{id}`, `GET /api/orgs/{id}/quotas` | `messijo:read` |
-| Keywords CRUD | `GET/POST /api/orgs/{org_id}/keywords`, `GET/PATCH/DELETE .../{id}` | `read` / `write` |
-| Keyword events | `GET .../keyword_events`, `GET .../{id}`, totals, full-events, mark-read, update_status | `read` / `write` |
-| Lenses (read + run) | lens CRUD, start/stop/status, results index/show/totals, mark-read | `read` / `write` |
+| Keywords CRUD | `GET/POST /api/orgs/{org_id}/keywords`, `GET/PUT/DELETE .../{id}` | `read` / `write` |
+| Keyword events | `GET .../keywords/{keyword_id}/events`, `GET .../{id}`, `.../totals`, `.../full`, `.../mark_all_as_read`, `.../{id}/status` | `read` / `write` |
+| Lenses (read + run) | `.../keywords/{keyword_id}/lenses` CRUD, start/stop/status, `.../lenses/{lens_id}/results` index/show/totals, mark-all-read | `read` / `write` |
 | Stats | `GET .../stats/dashboard` | `messijo:read` |
-| Account | `GET /api/me` (identify the grant user) | `messijo:read` |
+| Account | `GET /api/users/current` (identify the grant user) | `messijo:read` |
 
 Explicitly out of the first release: billing, API-key management, org
 mutation/deletion, memberships/invitations, notification connections, and all
@@ -223,6 +223,9 @@ Tool design guidance:
 - Require an `organization_id` parameter on org-scoped tools. Resolve the
   selectable set from `GET /api/orgs` (grant-filtered) and present live names
   in tool descriptions, never cached ones.
+- Keyword events, lenses, and lens results are per-keyword (lens results also
+  per-lens): resolve `keyword_id` from the keywords tool and `lens_id` from the
+  lenses tool. The API exposes no org-wide equivalents.
 - Surface backend errors (402 quota, 404, 422 validation) faithfully with the
   API's error payload rather than generic failures — the client needs them to
   self-correct.
